@@ -1,2 +1,2 @@
-# tf-utils
+# tfutils
 Terraform provider helper utils
