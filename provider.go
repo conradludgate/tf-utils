@@ -19,18 +19,18 @@ type DataSource interface {
 	Structure
 }
 
-// ProviderBuilder is the type that will build into a terraform provider
-type ProviderBuilder struct {
+// Provider is the type that will build into a terraform provider
+type Provider struct {
 	Schema        SchemaMap
 	Resources     ResourceMap
 	DataSources   DataSourceMap
 	ConfigureFunc schema.ConfigureFunc
 }
 
-// Build converts the ProviderBuilder into a *schema.Provider
-func (pb ProviderBuilder) Build() *schema.Provider {
+// Build converts the Provider into a *schema.Provider
+func (pb Provider) Build() *schema.Provider {
 	return &schema.Provider{
-		Schema:         pb.Schema.BuildSchema(),
+		Schema:         pb.Schema.BuildSchemaMap(),
 		ResourcesMap:   pb.Resources.BuildResourcesMap(),
 		DataSourcesMap: pb.DataSources.BuildDataSourcesMap(),
 		ConfigureFunc:  pb.ConfigureFunc,

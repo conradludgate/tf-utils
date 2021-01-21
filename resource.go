@@ -2,26 +2,6 @@ package tfutils
 
 import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
-// SchemaMap is a builder for a *schema.Resource type
-type SchemaMap map[string]SchemaBuilder
-
-// BuildSchema converts a SchemaMap into a map[string]*schema.Schema
-func (sm SchemaMap) BuildSchema() map[string]*schema.Schema {
-	m := (map[string]SchemaBuilder)(sm)
-	s := make(map[string]*schema.Schema, len(m))
-	for k, v := range m {
-		s[k] = v.Build()
-	}
-	return s
-}
-
-// BuildResource converts a SchemaMap into a *schema.Resource
-func (sm SchemaMap) BuildResource() *schema.Resource {
-	return &schema.Resource{
-		Schema: sm.BuildSchema(),
-	}
-}
-
 // Data represents a read only data source
 type Data interface {
 	Read(d *schema.ResourceData, m interface{}) error
@@ -35,6 +15,9 @@ type CRUD interface {
 	Delete(d *schema.ResourceData, m interface{}) error
 }
 
+// SchemaMap is a builder for a *schema.Resource type
+type SchemaMap map[string]Schema
+
 // BuildCRUD creates a new CRUD *schema.Resource type
 func (sm SchemaMap) BuildCRUD(crud CRUD) *schema.Resource {
 	r := sm.BuildResource()
@@ -45,6 +28,23 @@ func (sm SchemaMap) BuildCRUD(crud CRUD) *schema.Resource {
 	return r
 }
 
+// BuildSchemaMap converts a SchemaMap into a map[string]*schema.Schema
+func (sm SchemaMap) BuildSchemaMap() map[string]*schema.Schema {
+	m := (map[string]Schema)(sm)
+	s := make(map[string]*schema.Schema, len(m))
+	for k, v := range m {
+		s[k] = v.Build()
+	}
+	return s
+}
+
+// BuildResource converts a SchemaMap into a *schema.Resource
+func (sm SchemaMap) BuildResource() *schema.Resource {
+	return &schema.Resource{
+		Schema: sm.BuildSchemaMap(),
+	}
+}
+
 // BuildDataSource creates a new data source *schema.Resource type
 func (sm SchemaMap) BuildDataSource(data Data) *schema.Resource {
 	r := sm.BuildResource()
@@ -52,12 +52,12 @@ func (sm SchemaMap) BuildDataSource(data Data) *schema.Resource {
 	return r
 }
 
-// IntoSet is the builder version of Set
-func (sm SchemaMap) IntoSet() SchemaBuilder {
-	return Set(sm)
+// IntoSet converts the SchemaMap into a Set Schema over this structure
+func (sm SchemaMap) IntoSet() SetSchema {
+	return newComplexSetSchema(sm.BuildResource())
 }
 
-// IntoList is the builder version of List
-func (sm SchemaMap) IntoList() SchemaBuilder {
-	return List(sm)
+// IntoList converts the SchemaMap into a List Schema over this structure
+func (sm SchemaMap) IntoList() ListSchema {
+	return newComplexListSchema(sm.BuildResource())
 }

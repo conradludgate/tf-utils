@@ -1,127 +1,181 @@
 package tfutils
 
-import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-
-// SchemaBuilder is a utility type that makes it easy to create new schema objects
-type SchemaBuilder struct {
-	s schema.Schema
+func (s SimpleSchema) Required(status bool) SimpleSchema {
+	s.s.Required = status
+	return s
 }
 
-// Required will set schema as required
-func (b SchemaBuilder) Required() SchemaBuilder {
-	b.s.Required = true
-	b.s.Optional = false
-
-	return b
+func (s SimpleSchema) Optional(status bool) SimpleSchema {
+	s.s.Optional = status
+	return s
 }
 
-// Optional will set schema as optional
-func (b SchemaBuilder) Optional() SchemaBuilder {
-	b.s.Required = false
-	b.s.Optional = true
-
-	return b
+func (s SimpleSchema) Computed(status bool) SimpleSchema {
+	s.s.Computed = status
+	return s
 }
 
-// Computed will set schema as computed
-func (b SchemaBuilder) Computed() SchemaBuilder {
-	b.s.Computed = true
-	return b
+func (s SimpleSchema) Default(d interface{}) SimpleSchema {
+	s.s.Default = d
+	return s
 }
 
-// Build converts the SchemaBuiler into a Schema
-func (b SchemaBuilder) Build() *schema.Schema {
-	return &b.s
+func (s SimpleSchema) ConflictsWith(t ...string) SimpleSchema {
+	s.s.ConflictsWith = t
+	return s
 }
 
-// String creates a new string schema
-func String() SchemaBuilder {
-	return NewSchema().WithType(schema.TypeString)
+func (s SimpleSchema) ExactlyOneOf(t ...string) SimpleSchema {
+	s.s.ExactlyOneOf = t
+	return s
 }
 
-// Int creates a new string schema
-func Int() SchemaBuilder {
-	return NewSchema().WithType(schema.TypeInt)
+func (s SimpleSchema) AtLeastOneOf(t ...string) SimpleSchema {
+	s.s.AtLeastOneOf = t
+	return s
 }
 
-// Bool creates a new string schema
-func Bool() SchemaBuilder {
-	return NewSchema().WithType(schema.TypeBool)
+func (s SimpleSchema) RequiredWith(t ...string) SimpleSchema {
+	s.s.RequiredWith = t
+	return s
 }
 
-// NewSchema creates a new empty schema builder
-func NewSchema() SchemaBuilder {
-	return SchemaBuilder{}
+func (s SimpleSchema) Sensitive(status bool) SimpleSchema {
+	s.s.Sensitive = status
+	return s
 }
 
-// WithType sets the type of the schema
-func (b SchemaBuilder) WithType(typ schema.ValueType) SchemaBuilder {
-	b.s.Type = typ
-	return b
+func (s ListSchema) Required(status bool) ListSchema {
+	s.s.Required = status
+	return s
 }
 
-// WithElem sets the elem of the schema
-func (b SchemaBuilder) WithElem(elem interface{}) SchemaBuilder {
-	b.s.Elem = elem
-	return b
+func (s ListSchema) Optional(status bool) ListSchema {
+	s.s.Optional = status
+	return s
 }
 
-// Default sets the default element of the schema and sets the schema to optional
-func (b SchemaBuilder) Default(v interface{}) SchemaBuilder {
-	b.s.Default = v
-	b.s.Optional = true
-	return b
+func (s ListSchema) Computed(status bool) ListSchema {
+	s.s.Computed = status
+	return s
 }
 
-// List converts the type into a list. Must be called after String, Int etc
-func (b SchemaBuilder) List() SchemaBuilder {
-	return b.WithElem(&schema.Schema{Type: b.s.Type}).WithType(schema.TypeList)
+func (s ListSchema) Default(d interface{}) ListSchema {
+	s.s.Default = d
+	return s
 }
 
-// Map converts the type into a map. Must be called after String, Int etc
-func (b SchemaBuilder) Map() SchemaBuilder {
-	return b.WithElem(&schema.Schema{Type: b.s.Type, Elem: b.s.Elem}).WithType(schema.TypeMap)
+func (s ListSchema) ConflictsWith(t ...string) ListSchema {
+	s.s.ConflictsWith = t
+	return s
 }
 
-// Set converts the type into a set. Must be called after String, Int etc
-func (b SchemaBuilder) Set() SchemaBuilder {
-	return b.WithElem(&schema.Schema{Type: b.s.Type}).WithType(schema.TypeSet)
+func (s ListSchema) ExactlyOneOf(t ...string) ListSchema {
+	s.s.ExactlyOneOf = t
+	return s
 }
 
-// ListOf creates a new schema list over the resource
-func ListOf(r Structure) SchemaBuilder {
-	return NewSchema().WithType(schema.TypeList).WithElem(r.Schema().BuildResource())
+func (s ListSchema) AtLeastOneOf(t ...string) ListSchema {
+	s.s.AtLeastOneOf = t
+	return s
 }
 
-// SetOf creates a new schema set over the resource
-func SetOf(r Structure) SchemaBuilder {
-	return NewSchema().WithType(schema.TypeSet).WithElem(r.Schema().BuildResource())
+func (s ListSchema) RequiredWith(t ...string) ListSchema {
+	s.s.RequiredWith = t
+	return s
 }
 
-// Set creates a schema set type over the map of sub schemas
-func Set(s SchemaMap) SchemaBuilder {
-	return NewSchema().WithType(schema.TypeSet).WithElem(s.BuildResource())
+func (s ListSchema) Sensitive(status bool) ListSchema {
+	s.s.Sensitive = status
+	return s
 }
 
-// List creates a schema list type over the map of sub schemas
-func List(s SchemaMap) SchemaBuilder {
-	return NewSchema().WithType(schema.TypeList).WithElem(s.BuildResource())
+func (s SetSchema) Required(status bool) SetSchema {
+	s.s.Required = status
+	return s
 }
 
-// ConflictsWith adds the given keys to the schema's conflicts with array
-func (b SchemaBuilder) ConflictsWith(key ...string) SchemaBuilder {
-	b.s.ConflictsWith = append(b.s.ConflictsWith, key...)
-	return b
+func (s SetSchema) Optional(status bool) SetSchema {
+	s.s.Optional = status
+	return s
 }
 
-// MaxItems sets the maximum number of items allowed in this set/list
-func (b SchemaBuilder) MaxItems(n int) SchemaBuilder {
-	b.s.MaxItems = n
-	return b
+func (s SetSchema) Computed(status bool) SetSchema {
+	s.s.Computed = status
+	return s
 }
 
-// SetFunc adds the given Set Function to the schema
-func (b SchemaBuilder) SetFunc(f schema.SchemaSetFunc) SchemaBuilder {
-	b.s.Set = f
-	return b
+func (s SetSchema) Default(d interface{}) SetSchema {
+	s.s.Default = d
+	return s
+}
+
+func (s SetSchema) ConflictsWith(t ...string) SetSchema {
+	s.s.ConflictsWith = t
+	return s
+}
+
+func (s SetSchema) ExactlyOneOf(t ...string) SetSchema {
+	s.s.ExactlyOneOf = t
+	return s
+}
+
+func (s SetSchema) AtLeastOneOf(t ...string) SetSchema {
+	s.s.AtLeastOneOf = t
+	return s
+}
+
+func (s SetSchema) RequiredWith(t ...string) SetSchema {
+	s.s.RequiredWith = t
+	return s
+}
+
+func (s SetSchema) Sensitive(status bool) SetSchema {
+	s.s.Sensitive = status
+	return s
+}
+
+func (s MapSchema) Required(status bool) MapSchema {
+	s.s.Required = status
+	return s
+}
+
+func (s MapSchema) Optional(status bool) MapSchema {
+	s.s.Optional = status
+	return s
+}
+
+func (s MapSchema) Computed(status bool) MapSchema {
+	s.s.Computed = status
+	return s
+}
+
+func (s MapSchema) Default(d interface{}) MapSchema {
+	s.s.Default = d
+	return s
+}
+
+func (s MapSchema) ConflictsWith(t ...string) MapSchema {
+	s.s.ConflictsWith = t
+	return s
+}
+
+func (s MapSchema) ExactlyOneOf(t ...string) MapSchema {
+	s.s.ExactlyOneOf = t
+	return s
+}
+
+func (s MapSchema) AtLeastOneOf(t ...string) MapSchema {
+	s.s.AtLeastOneOf = t
+	return s
+}
+
+func (s MapSchema) RequiredWith(t ...string) MapSchema {
+	s.s.RequiredWith = t
+	return s
+}
+
+func (s MapSchema) Sensitive(status bool) MapSchema {
+	s.s.Sensitive = status
+	return s
 }
