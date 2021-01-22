@@ -17,7 +17,7 @@ func (s SimpleSchema) Computed(status bool) SimpleSchema {
 
 func (s SimpleSchema) Default(d interface{}) SimpleSchema {
 	s.s.Default = d
-	return s
+	return s.Optional(true)
 }
 
 func (s SimpleSchema) ConflictsWith(t ...string) SimpleSchema {
@@ -62,7 +62,7 @@ func (s ListSchema) Computed(status bool) ListSchema {
 
 func (s ListSchema) Default(d interface{}) ListSchema {
 	s.s.Default = d
-	return s
+	return s.Optional(true)
 }
 
 func (s ListSchema) ConflictsWith(t ...string) ListSchema {
@@ -107,7 +107,7 @@ func (s SetSchema) Computed(status bool) SetSchema {
 
 func (s SetSchema) Default(d interface{}) SetSchema {
 	s.s.Default = d
-	return s
+	return s.Optional(true)
 }
 
 func (s SetSchema) ConflictsWith(t ...string) SetSchema {
@@ -152,7 +152,7 @@ func (s MapSchema) Computed(status bool) MapSchema {
 
 func (s MapSchema) Default(d interface{}) MapSchema {
 	s.s.Default = d
-	return s
+	return s.Optional(true)
 }
 
 func (s MapSchema) ConflictsWith(t ...string) MapSchema {
