@@ -1,64 +1,44 @@
 package tfutils
 
-import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+import (
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
+)
 
-// Structure represents a type that declares it's structure as a SchemaMap
-type Structure interface {
-	Schema() SchemaMap
+type Provider interface {
+	Schema
+	Configure() error
+	Client() interface{}
+	Resources() map[string]CRUD
+	Datasources() map[string]Data
 }
 
-// Resource is the type that a terraform resource will implement
-type Resource interface {
-	CRUD
-	Structure
-}
+func ProviderFunc(p Provider) plugin.ProviderFunc {
+	return func() *schema.Provider {
+		sm := p.IntoSchemaMap()
 
-// DataSource is the type that a terraform data source will implement
-type DataSource interface {
-	Data
-	Structure
-}
+		pr := p.Resources()
+		resources := make(map[string]*schema.Resource, len(pr))
+		for key, v := range pr {
+			resources[key] = BuildCRUD(v)
+		}
+		pd := p.Datasources()
+		datasources := make(map[string]*schema.Resource, len(pd))
+		for key, v := range pd {
+			datasources[key] = BuildData(v)
+		}
 
-// Provider is the type that will build into a terraform provider
-type Provider struct {
-	Schema        SchemaMap
-	Resources     ResourceMap
-	DataSources   DataSourceMap
-	ConfigureFunc schema.ConfigureFunc
-}
-
-// Build converts the Provider into a *schema.Provider
-func (pb Provider) Build() *schema.Provider {
-	return &schema.Provider{
-		Schema:         pb.Schema.BuildSchemaMap(),
-		ResourcesMap:   pb.Resources.BuildResourcesMap(),
-		DataSourcesMap: pb.DataSources.BuildDataSourcesMap(),
-		ConfigureFunc:  pb.ConfigureFunc,
+		return &schema.Provider{
+			Schema: sm,
+			ConfigureFunc: func(d *schema.ResourceData) (interface{}, error) {
+				p.UnmarshalResource(load(d, sm))
+				if err := p.Configure(); err != nil {
+					return nil, err
+				}
+				return p.Client(), nil
+			},
+			ResourcesMap:   resources,
+			DataSourcesMap: datasources,
+		}
 	}
-}
-
-// ResourceMap represents a map of Resources
-type ResourceMap map[string]Resource
-
-// BuildResourcesMap converts a ResourceMap into a map[string]*schema.Resource
-func (rm ResourceMap) BuildResourcesMap() map[string]*schema.Resource {
-	m := (map[string]Resource)(rm)
-	s := make(map[string]*schema.Resource, len(m))
-	for k, v := range m {
-		s[k] = v.Schema().BuildCRUD(v)
-	}
-	return s
-}
-
-// DataSourceMap represents a map of DataSources
-type DataSourceMap map[string]DataSource
-
-// BuildDataSourcesMap converts a DataSourceMap into a map[string]*schema.Resource
-func (rm DataSourceMap) BuildDataSourcesMap() map[string]*schema.Resource {
-	m := (map[string]DataSource)(rm)
-	s := make(map[string]*schema.Resource, len(m))
-	for k, v := range m {
-		s[k] = v.Schema().BuildDataSource(v)
-	}
-	return s
 }

@@ -1,63 +1,167 @@
 package tfutils
 
-import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+import (
+	"reflect"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
 
 // Data represents a read only data source
 type Data interface {
-	Read(d *schema.ResourceData, m interface{}) error
+	Schema
+	SetClient(m interface{})
+
+	Read() error
 }
 
 // CRUD represents a CRUD resource type
 type CRUD interface {
-	Read(d *schema.ResourceData, m interface{}) error
-	Create(d *schema.ResourceData, m interface{}) error
-	Update(d *schema.ResourceData, m interface{}) error
-	Delete(d *schema.ResourceData, m interface{}) error
+	Schema
+	SetClient(m interface{})
+
+	Read() error
+	Create() error
+	Update(old map[string]interface{}) error
+	Delete() error
 }
 
-// SchemaMap is a builder for a *schema.Resource type
-type SchemaMap map[string]Schema
+func save(d *schema.ResourceData, old, new map[string]interface{}) {
+	for key, v := range new {
+		if !reflect.DeepEqual(old[key], v) {
+			d.Set(key, v)
+		}
+	}
+}
+func load(d *schema.ResourceData, sm map[string]*schema.Schema) map[string]interface{} {
+	r := make(map[string]interface{}, len(sm))
+	for key := range sm {
+		r[key] = d.Get(key)
+	}
+	r["id"] = d.Id()
+	return r
+}
+func loadOld(d *schema.ResourceData, sm map[string]*schema.Schema) (old, new map[string]interface{}) {
+	old = make(map[string]interface{}, len(sm))
+	old = make(map[string]interface{}, len(sm))
+	for key := range sm {
+		old[key], new[key] = d.GetChange(key)
+	}
+	old["id"] = d.Id()
+	new["id"] = d.Id()
+	return
+}
+
+// BuildData creates a new data *schema.Resource type
+func BuildData(data Data) *schema.Resource {
+	sm := data.IntoSchemaMap()
+	return &schema.Resource{
+		Schema: sm,
+
+		Read: func(d *schema.ResourceData, m interface{}) error {
+			data.SetClient(m)
+
+			r := load(d, sm)
+
+			data.UnmarshalResource(r)
+
+			if err := data.Read(); err != nil {
+				return err
+			}
+
+			save(d, r, data.MarshalResource())
+
+			return nil
+		},
+	}
+}
 
 // BuildCRUD creates a new CRUD *schema.Resource type
-func (sm SchemaMap) BuildCRUD(crud CRUD) *schema.Resource {
-	r := sm.BuildResource()
-	r.Create = crud.Create
-	r.Delete = crud.Delete
-	r.Update = crud.Update
-	r.Read = crud.Read
-	return r
-}
-
-// BuildSchemaMap converts a SchemaMap into a map[string]*schema.Schema
-func (sm SchemaMap) BuildSchemaMap() map[string]*schema.Schema {
-	m := (map[string]Schema)(sm)
-	s := make(map[string]*schema.Schema, len(m))
-	for k, v := range m {
-		s[k] = v.Build()
-	}
-	return s
-}
-
-// BuildResource converts a SchemaMap into a *schema.Resource
-func (sm SchemaMap) BuildResource() *schema.Resource {
+func BuildCRUD(crud CRUD) *schema.Resource {
+	sm := crud.IntoSchemaMap()
 	return &schema.Resource{
-		Schema: sm.BuildSchemaMap(),
+		Schema: sm,
+
+		Create: func(d *schema.ResourceData, m interface{}) error {
+			crud.SetClient(m)
+
+			r := load(d, sm)
+
+			crud.UnmarshalResource(r)
+
+			if err := crud.Create(); err != nil {
+				return err
+			}
+
+			save(d, r, crud.MarshalResource())
+
+			return nil
+		},
+
+		Read: func(d *schema.ResourceData, m interface{}) error {
+			crud.SetClient(m)
+
+			r := load(d, sm)
+
+			crud.UnmarshalResource(r)
+
+			if err := crud.Read(); err != nil {
+				return err
+			}
+
+			save(d, r, crud.MarshalResource())
+
+			return nil
+		},
+
+		Update: func(d *schema.ResourceData, m interface{}) error {
+			crud.SetClient(m)
+
+			old, new := loadOld(d, sm)
+
+			crud.UnmarshalResource(new)
+
+			if err := crud.Update(old); err != nil {
+				return err
+			}
+
+			save(d, new, crud.MarshalResource())
+
+			return nil
+		},
+
+		Delete: func(d *schema.ResourceData, m interface{}) error {
+			crud.SetClient(m)
+
+			r := load(d, sm)
+
+			crud.UnmarshalResource(r)
+			return crud.Delete()
+		},
 	}
 }
 
-// BuildDataSource creates a new data source *schema.Resource type
-func (sm SchemaMap) BuildDataSource(data Data) *schema.Resource {
-	r := sm.BuildResource()
-	r.Read = data.Read
-	return r
+type Schema interface {
+	UnmarshalResource(map[string]interface{})
+	MarshalResource() map[string]interface{}
+	IntoSchemaMap() map[string]*schema.Schema
 }
 
-// IntoSet converts the SchemaMap into a Set Schema over this structure
-func (sm SchemaMap) IntoSet() SetSchema {
-	return newComplexSetSchema(sm.BuildResource())
+type Set interface {
+	Schema
+	Hash() int
 }
 
-// IntoList converts the SchemaMap into a List Schema over this structure
-func (sm SchemaMap) IntoList() ListSchema {
-	return newComplexListSchema(sm.BuildResource())
+func BuildHashFunc(s Set) schema.SchemaSetFunc {
+	return func(d interface{}) int {
+		s.UnmarshalResource(d.(map[string]interface{}))
+		return s.Hash()
+	}
+}
+
+func GetHashFunc(s Schema) schema.SchemaSetFunc {
+	var i interface{} = s
+	if set, ok := i.(Set); ok {
+		return BuildHashFunc(set)
+	}
+	return schema.HashResource(&schema.Resource{Schema: s.IntoSchemaMap()})
 }
