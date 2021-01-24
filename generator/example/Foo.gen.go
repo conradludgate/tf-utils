@@ -28,34 +28,28 @@ func (s *Foo) IntoSchemaMap() map[string]*schema.Schema {
 		Description: "Simple lists can be implemented",
 	}
 
-	baz := Baz{}
+	anotherListElem := Baz{}
 	m["another_list"] = &schema.Schema{
-		Type:     schema.TypeList,
-		Elem:     &schema.Resource{Schema: baz.IntoSchemaMap()},
-		Optional: true,
-		Description: `Complex lists can too, as long as Baz
-implements the 'Schema' interface`,
+		Type:        schema.TypeList,
+		Elem:        &schema.Resource{Schema: anotherListElem.IntoSchemaMap()},
+		Optional:    true,
+		Description: "Complex lists can too, as long as Baz\nimplements the 'Schema' interface",
 	}
 
 	m["map"] = &schema.Schema{
 		Type:        schema.TypeMap,
-		Elem:        &schema.Schema{Type: schema.TypeString},
+		Elem:        &schema.Schema{Type: schema.TypeInt},
 		Optional:    true,
 		Description: "Maps can only be over simple types (terraform limitation)",
 	}
 
-	bar := Bar{}
+	setElem := Bar{}
 	m["set"] = &schema.Schema{
-		Type:     schema.TypeSet,
-		Elem:     &schema.Resource{Schema: bar.IntoSchemaMap()},
-		Optional: true,
-		Description: `map[int]... represents a Set.
-If Bar implements the 'Set' interface,
-then that will be the Set function`,
-	}
-	var bar_i interface{} = bar
-	if set, ok := bar_i.(tfutils.Set); ok {
-		m["set"].Set = tfutils.BuildHashFunc(set)
+		Type:        schema.TypeSet,
+		Elem:        &schema.Resource{Schema: setElem.IntoSchemaMap()},
+		Set:         tfutils.GetHashFunc(&setElem),
+		Optional:    true,
+		Description: "map[int]... represents a Set.\nIf Bar implements the `Set` interface,\nthen that will be the Set function",
 	}
 
 	return m
