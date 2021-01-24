@@ -60,30 +60,30 @@ func (s *Foo) UnmarshalResource(d map[string]interface{}) {
 
 	s.B = d["b"].(int)
 
-	list := d["list"].([]interface{})
-	s.List = make([]string, len(list))
-	for i, v := range list {
+	listElems := d["list"].([]interface{})
+	s.List = make([]string, len(listElems))
+	for i, v := range listElems {
 		s.List[i] = v.(string)
 	}
 
-	anotherList := d["another_list"].([]interface{})
-	s.AnotherList = make([]Baz, len(anotherList))
-	for i, v := range anotherList {
+	anotherListElems := d["another_list"].([]interface{})
+	s.AnotherList = make([]Baz, len(anotherListElems))
+	for i, v := range anotherListElems {
 		s.AnotherList[i].UnmarshalResource(v.(map[string]interface{}))
 	}
 
-	map_ := d["map"].(map[string]interface{})
-	s.Map = make(map[string]int, len(map_))
-	for k, v := range map_ {
+	mapElems := d["map"].(map[string]interface{})
+	s.Map = make(map[string]int, len(mapElems))
+	for k, v := range mapElems {
 		s.Map[k] = v.(int)
 	}
 
-	set := d["set"].(*schema.Set)
-	s.Set = make(map[int]Bar, set.Len())
-	for _, v := range set.List() {
-		bar := Bar{}
-		bar.UnmarshalResource(v.(map[string]interface{}))
-		s.Set[set.F(v)] = bar
+	setElems := d["set"].(*schema.Set)
+	s.Set = make(map[int]Bar, setElems.Len())
+	for _, v := range setElems.List() {
+		t := Bar{}
+		t.UnmarshalResource(v.(map[string]interface{}))
+		s.Set[setElems.F(v)] = t
 	}
 }
 

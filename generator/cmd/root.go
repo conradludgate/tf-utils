@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 
@@ -12,6 +13,96 @@ import (
 
 	"github.com/conradludgate/tfutils/generator/pkg"
 )
+
+func FooSchemaMap(w io.Writer) {
+	s := map[string]interface{}{}
+	s["StructName"] = "Foo"
+
+	fields := []interface{}{}
+	fields = append(fields, map[string]interface{}{
+		"Template":    "simple",
+		"Name":        "A",
+		"Type":        "String",
+		"Default":     strconv.Quote("foo"),
+		"Description": strconv.Quote("Some value"),
+	})
+	fields = append(fields, map[string]interface{}{
+		"Template":    "simple",
+		"Name":        "B",
+		"Type":        "Int",
+		"Required":    true,
+		"Description": strconv.Quote("Some other value"),
+	})
+	fields = append(fields, map[string]interface{}{
+		"Template":    "simple_list",
+		"Name":        "List",
+		"Elem":        "String",
+		"Description": strconv.Quote("Simple lists can be implemented"),
+	})
+	fields = append(fields, map[string]interface{}{
+		"Template":     "complex_list",
+		"Name":         "AnotherList",
+		"ElemTypeName": "Baz",
+		"Description":  strconv.Quote("Complex lists can too, as long as Baz\nimplements the 'Schema' interface"),
+	})
+	fields = append(fields, map[string]interface{}{
+		"Template":    "map",
+		"Name":        "Map",
+		"Elem":        "Int",
+		"Description": strconv.Quote("Maps can only be over simple types (terraform limitation)"),
+	})
+	fields = append(fields, map[string]interface{}{
+		"Template":     "complex_set",
+		"Name":         "Set",
+		"ElemTypeName": "Bar",
+		"Description":  strconv.Quote("map[int]... represents a Set.\nIf Bar implements the `Set` interface,\nthen that will be the Set function"),
+	})
+
+	s["Fields"] = fields
+
+	pkg.IntoSchemaMapTemplate.Execute(w, s)
+}
+
+func FooUnmarshal(w io.Writer) {
+	s := map[string]interface{}{}
+	s["StructName"] = "Foo"
+
+	fields := []interface{}{}
+	fields = append(fields, map[string]interface{}{
+		"Template": "simple",
+		"Name":     "A",
+		"Type":     "string",
+	})
+	fields = append(fields, map[string]interface{}{
+		"Template": "simple",
+		"Name":     "B",
+		"Type":     "int",
+	})
+	fields = append(fields, map[string]interface{}{
+		"Template": "simple_list",
+		"Name":     "List",
+		"ElemType": "string",
+	})
+	fields = append(fields, map[string]interface{}{
+		"Template": "complex_list",
+		"Name":     "AnotherList",
+		"ElemType": "Baz",
+	})
+	fields = append(fields, map[string]interface{}{
+		"Template": "map",
+		"Name":     "Map",
+		"ElemType": "int",
+	})
+	fields = append(fields, map[string]interface{}{
+		"Template": "complex_set",
+		"Name":     "Set",
+		"ElemType": "Bar",
+	})
+
+	s["Fields"] = fields
+
+	pkg.UnmarshalResourceTemplate.Execute(w, s)
+}
 
 var cfgFile string
 
@@ -28,53 +119,7 @@ to quickly create a Cobra application.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-
-		s := map[string]interface{}{}
-		s["StructName"] = "Foo"
-
-		fields := []interface{}{}
-		fields = append(fields, map[string]interface{}{
-			"Template":    "simple",
-			"Name":        "A",
-			"Type":        "String",
-			"Default":     strconv.Quote("foo"),
-			"Description": strconv.Quote("Some value"),
-		})
-		fields = append(fields, map[string]interface{}{
-			"Template":    "simple",
-			"Name":        "B",
-			"Type":        "Int",
-			"Required":    true,
-			"Description": strconv.Quote("Some other value"),
-		})
-		fields = append(fields, map[string]interface{}{
-			"Template":    "simple_list",
-			"Name":        "List",
-			"Elem":        "String",
-			"Description": strconv.Quote("Simple lists can be implemented"),
-		})
-		fields = append(fields, map[string]interface{}{
-			"Template":     "complex_list",
-			"Name":         "AnotherList",
-			"ElemTypeName": "Baz",
-			"Description":  strconv.Quote("Complex lists can too, as long as Baz\nimplements the 'Schema' interface"),
-		})
-		fields = append(fields, map[string]interface{}{
-			"Template":    "map",
-			"Name":        "Map",
-			"Elem":        "Int",
-			"Description": strconv.Quote("Maps can only be over simple types (terraform limitation)"),
-		})
-		fields = append(fields, map[string]interface{}{
-			"Template":     "complex_set",
-			"Name":         "Set",
-			"ElemTypeName": "Bar",
-			"Description":  strconv.Quote("map[int]... represents a Set.\nIf Bar implements the `Set` interface,\nthen that will be the Set function"),
-		})
-
-		s["Fields"] = fields
-
-		pkg.IntoSchemaMapTemplate.Execute(cmd.OutOrStdout(), s)
+		FooUnmarshal(cmd.OutOrStdout())
 	},
 }
 
